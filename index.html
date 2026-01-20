@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Aquarium Dashboard (Realtime DB)</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🐠 BỂ CÁ THÔNG MINH</div>
+    <div class="pill"><span class="dot" id="dot"></span><span id="status">Connecting…</span></div>
+  </header>
+
+  <main class="container">
+    <section class="cards">
+      <div class="card">
+        <div class="k">Chất lượng nước (TDS)</div>
+        <div class="v"><span id="tds">--</span> ppm</div>
+        <div class="m" id="alert">--</div>
+      </div>
+      <div class="card">
+        <div class="k">Ánh sáng</div>
+        <div class="v"><span id="light">--</span>%</div>
+        <div class="m">Cập nhật: <span id="updatedAt">--</span></div>
+      </div>
+      <div class="card">
+        <div class="k">Trạng thái bơm</div>
+        <div class="v"><span id="pump">--</span></div>
+        <div class="m">Last: <span id="lastPump">--</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>💡 Điều khiển LED</h2>
+      <div class="row">
+        <label>Brightness</label>
+        <input id="brightness" type="range" min="0" max="100" value="50"/>
+        <b id="brightText">50%</b>
+      </div>
+      <div class="row">
+        <label>Màu</label>
+        <input id="color" type="color" value="#2ea4ff"/>
+        <div class="colorBox" id="colorBox"><span id="colorHex">#2EA4FF</span></div>
+      </div>
+      <button class="btn primary" id="saveLed">Lưu LED</button>
+    </section>
+
+    <section class="panel">
+      <h2>⚙️ Tự động &amp; Bảo trì</h2>
+      <div class="grid2">
+        <div class="mini">
+          <h3>🍽 Lịch cho ăn</h3>
+          <div class="row">
+            <input id="feedTime" type="time" value="08:00"/>
+            <button class="btn" id="saveFeed">Lưu</button>
+          </div>
+          <button class="btn success" id="feedNow">Cho ăn ngay</button>
+          <div class="m">Lần gần nhất: <span id="lastFeed">--</span></div>
+        </div>
+
+        <div class="mini">
+          <h3>🔁 Lịch thay nước</h3>
+          <div class="row">
+            <input id="waterTime" type="time" value="19:00"/>
+            <button class="btn" id="saveWater">Lưu</button>
+          </div>
+          <button class="btn info" id="waterNow">Thay nước ngay</button>
+          <div class="m">Lần gần nhất: <span id="lastWater">--</span></div>
+        </div>
+      </div>
+
+      <div class="panelSub">
+        <h3>🧪 Sinh dữ liệu giả (không cần chip)</h3>
+        <div class="row">
+          <button class="btn ghost" id="startMock">Start Mock</button>
+          <button class="btn ghost" id="stopMock">Stop Mock</button>
+          <span class="m">Tự update TDS/Light + ghi log mỗi 2s</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>📈 Biểu đồ realtime (mini)</h2>
+      <canvas id="chart" height="110"></canvas>
+      <div class="m">Không cần thư viện — vẽ line đơn giản bằng Canvas.</div>
+    </section>
+
+    <div class="toast" id="toast">Đã lưu!</div>
+  </main>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
