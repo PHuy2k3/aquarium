@@ -21,7 +21,7 @@ const db = getFirestore(app);
 collection = aquarium
 document   = eMJjRGtbDT7JMiHdJSRO
 ====================== */
-const docRef = doc(db, "aquarium", "eMJjRGtbDT7JMiHdJSRO");
+const docRef = doc(db, "aquarium", "eMJiRGtbDT7JMiHdJSRO");
 
 /* ==== UI refs (KHỚP HTML) ==== */
 const tdsEl = document.getElementById("tds");
@@ -30,6 +30,16 @@ const updatedAtEl = document.getElementById("updatedAt");
 const pumpEl = document.getElementById("pump");
 const lastPumpEl = document.getElementById("lastPump");
 const alertEl = document.getElementById("alert");
+const statusEl = document.getElementById("status");
+const dotEl = document.getElementById("dot");
+
+function setStatus(state, text) {
+  statusEl.textContent = text;
+  dotEl.classList.remove("ok", "warn", "error");
+  if (state) {
+    dotEl.classList.add(state);
+  }
+}
 
 function waterStatusText(v) {
   if (v == null) return "--";
@@ -39,21 +49,35 @@ function waterStatusText(v) {
 }
 
 /* ==== LISTEN REALTIME FIRESTORE ==== */
-onSnapshot(docRef, (snap) => {
-  if (!snap.exists()) return;
+onSnapshot(
+  docRef,
+  (snap) => {
+    if (!snap.exists()) {
+      setStatus("warn", "Không thấy dữ liệu");
+      alertEl.textContent =
+        "Không tìm thấy document. Kiểm tra collection/document ID.";
+      return;
+    }
 
-  const d = snap.data();
+    setStatus("ok", "Đã kết nối");
 
-  tdsEl.textContent = d.water_quality ?? "--";
-  lightEl.textContent = d.lux ?? "--";
+    const d = snap.data();
 
-  alertEl.textContent =
-    d.alert_message && d.alert_message !== ""
-      ? d.alert_message
-      : waterStatusText(d.water_quality);
+    tdsEl.textContent = d.water_quality ?? "--";
+    lightEl.textContent = d.lux ?? "--";
 
-  pumpEl.textContent = d.water_status ?? "--";
-  lastPumpEl.textContent = "--";
+    alertEl.textContent =
+      d.alert_message && d.alert_message !== ""
+        ? d.alert_message
+        : waterStatusText(d.water_quality);
 
-  updatedAtEl.textContent = new Date().toLocaleString();
-});
+    pumpEl.textContent = d.water_status ?? "--";
+    lastPumpEl.textContent = "--";
+
+    updatedAtEl.textContent = new Date().toLocaleString();
+  },
+  (error) => {
+    setStatus("error", "Không kết nối");
+    alertEl.textContent = `Lỗi Firebase: ${error.message}`;
+  }
+);

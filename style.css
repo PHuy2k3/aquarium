@@ -23,6 +23,9 @@ body{
   border-radius:999px; color:var(--muted); font-size:12px;
   background:rgba(255,255,255,.06);
 }
+.dot.ok{background:var(--green)}
+.dot.warn{background:var(--amber)}
+.dot.error{background:var(--red)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--amber)}
 .container{max-width:1100px;margin:18px auto;padding:0 16px}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
