@@ -36,7 +36,14 @@ const colorBoxEl = document.getElementById("colorBox");
 const colorHexEl = document.getElementById("colorHex");
 const saveLedBtn = document.getElementById("saveLed");
 const toastEl = document.getElementById("toast");
-
+const feedTimeEl = document.getElementById("feedTime");
+const saveFeedBtn = document.getElementById("saveFeed");
+const feedNowBtn = document.getElementById("feedNow");
+const lastFeedEl = document.getElementById("lastFeed");
+const waterTimeEl = document.getElementById("waterTime");
+const saveWaterBtn = document.getElementById("saveWater");
+const waterNowBtn = document.getElementById("waterNow");
+const lastWaterEl = document.getElementById("lastWater");
 function setStatus(state, text) {
   statusEl.textContent = text;
   dotEl.classList.remove("ok", "warn", "error");
@@ -107,7 +114,7 @@ onSnapshot(
     if (!snap.exists()) {
       setStatus("warn", "Không thấy dữ liệu");
       alertEl.textContent =
-        "Không tìm thấy document. Kiểm tra collection/document ID.";
+        "Không thấy document. Kiểm tra collection/document ID và quyền đọc Firestore.";
       return;
     }
 
@@ -125,6 +132,18 @@ onSnapshot(
 
     pumpEl.textContent = d.water_status ?? "--";
     lastPumpEl.textContent = "--";
+    if (d.feed_time) {
+      feedTimeEl.value = d.feed_time;
+    }
+    if (d.water_time) {
+      waterTimeEl.value = d.water_time;
+    }
+    lastFeedEl.textContent = d.feed_last_at
+      ? new Date(d.feed_last_at).toLocaleString()
+      : "--";
+    lastWaterEl.textContent = d.water_last_at
+      ? new Date(d.water_last_at).toLocaleString()
+      : "--";
 
     updatedAtEl.textContent = new Date().toLocaleString();
   },
