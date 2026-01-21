@@ -44,6 +44,49 @@ const waterTimeEl = document.getElementById("waterTime");
 const saveWaterBtn = document.getElementById("saveWater");
 const waterNowBtn = document.getElementById("waterNow");
 const lastWaterEl = document.getElementById("lastWater");
+const shareUrlEl = document.getElementById("shareUrl");
+const copyLinkBtn = document.getElementById("copyLink");
+const shareHostEl = document.getElementById("shareHost");
+const saveHostBtn = document.getElementById("saveHost");
+const STORAGE_KEY = "aquarium-dashboard-state";
+
+function loadStoredState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) ?? {};
+  } catch (error) {
+    console.warn("Không thể đọc localStorage:", error);
+    return {};
+  }
+}
+
+function updateStoredState(partial) {
+  try {
+    const current = loadStoredState();
+    const next = { ...current, ...partial };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch (error) {
+    console.warn("Không thể ghi localStorage:", error);
+  }
+}
+
+const storedState = loadStoredState();
+if (storedState.led_brightness !== undefined) {
+  brightnessEl.value = storedState.led_brightness;
+}
+if (storedState.led_color) {
+  colorEl.value = storedState.led_color;
+}
+if (storedState.feed_time) {
+  feedTimeEl.value = storedState.feed_time;
+}
+if (storedState.water_time) {
+  waterTimeEl.value = storedState.water_time;
+}
+if (storedState.share_host && shareHostEl) {
+  shareHostEl.value = storedState.share_host;
+}
 function setStatus(state, text) {
   statusEl.textContent = text;
   dotEl.classList.remove("ok", "warn", "error");
@@ -79,14 +122,61 @@ function syncBrightness(value) {
 
 colorEl.addEventListener("input", (event) => {
   setColorUi(event.target.value);
+  updateStoredState({ led_color: event.target.value });
 });
 
 brightnessEl.addEventListener("input", (event) => {
-  syncBrightness(event.target.value);
+  const value = Number(event.target.value);
+  syncBrightness(value);
+  updateStoredState({ led_brightness: value });
 });
 
 setColorUi(colorEl.value);
 syncBrightness(brightnessEl.value);
+function buildShareUrl() {
+  const customHost = shareHostEl?.value?.trim();
+  const origin = customHost
+    ? `${window.location.protocol}//${customHost}`
+    : window.location.origin;
+  return `${origin}${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
+function syncShareUrl() {
+  if (shareUrlEl) {
+    shareUrlEl.value = buildShareUrl();
+  }
+}
+
+syncShareUrl();
+
+copyLinkBtn?.addEventListener("click", async () => {
+  const url = shareUrlEl?.value || window.location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast("Đã copy link!");
+  } catch (error) {
+    showToast("Không thể copy, hãy copy thủ công.");
+  }
+});
+
+saveHostBtn?.addEventListener("click", () => {
+  const host = shareHostEl?.value?.trim() ?? "";
+  updateStoredState({ share_host: host || null });
+  syncShareUrl();
+  showToast("Đã cập nhật máy chủ");
+});
+
+shareHostEl?.addEventListener("input", () => {
+  syncShareUrl();
+});
+
+feedTimeEl.addEventListener("input", (event) => {
+  updateStoredState({ feed_time: event.target.value });
+});
+
+waterTimeEl.addEventListener("input", (event) => {
+  updateStoredState({ water_time: event.target.value });
+});
 
 saveLedBtn.addEventListener("click", async () => {
   saveLedBtn.disabled = true;
@@ -94,6 +184,10 @@ saveLedBtn.addEventListener("click", async () => {
 
   try {
     await updateDoc(docRef, {
+      led_brightness: Number(brightnessEl.value),
+      led_color: colorEl.value
+    });
+    updateStoredState({
       led_brightness: Number(brightnessEl.value),
       led_color: colorEl.value
     });
@@ -120,7 +214,7 @@ onSnapshot(
 
     setStatus("ok", "Đã kết nối");
 
-    const d = snap.data();
+     const d = snap.data();
 
     tdsEl.textContent = d.water_quality ?? "--";
     lightEl.textContent = d.lux ?? "--";
@@ -134,9 +228,11 @@ onSnapshot(
     lastPumpEl.textContent = "--";
     if (d.feed_time) {
       feedTimeEl.value = d.feed_time;
+      updateStoredState({ feed_time: d.feed_time });
     }
     if (d.water_time) {
       waterTimeEl.value = d.water_time;
+      updateStoredState({ water_time: d.water_time });
     }
     lastFeedEl.textContent = d.feed_last_at
       ? new Date(d.feed_last_at).toLocaleString()

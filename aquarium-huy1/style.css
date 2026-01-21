@@ -51,6 +51,11 @@ input[type="time"]{
   border:1px solid var(--stroke); background:rgba(0,0,0,.25);
   color:var(--text); font-weight:800;
 }
+input[type="text"]{
+  height:38px; padding:0 10px; border-radius:12px;
+  border:1px solid var(--stroke); background:rgba(0,0,0,.25);
+  color:var(--text); font-weight:700;
+}
 input[type="color"]{width:52px;height:38px;border-radius:12px;border:1px solid var(--stroke);background:transparent}
 .colorBox{
   flex:1; min-width:200px; height:38px; border-radius:12px;
@@ -69,6 +74,8 @@ input[type="color"]{width:52px;height:38px;border-radius:12px;border:1px solid v
 .btn.success{background:rgba(34,197,94,.25); border-color:rgba(34,197,94,.5)}
 .btn.info{background:rgba(34,211,238,.22); border-color:rgba(34,211,238,.5)}
 .btn.ghost{background:transparent}
+.shareRow{align-items:center}
+.shareField{flex:1; min-width:220px}
 .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .mini{
   padding:12px; border:1px solid var(--stroke); border-radius:16px;
@@ -92,4 +99,5 @@ input[type="color"]{width:52px;height:38px;border-radius:12px;border:1px solid v
   .cards{grid-template-columns:1fr}
   .grid2{grid-template-columns:1fr}
   input[type="range"]{min-width:160px}
+  .topbar{flex-direction:column;align-items:flex-start;gap:10px}
 }
