@@ -1,10 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const SUPABASE_URL = "https://ndfjgctyufbnylnfbicg.supabase.co";
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kZmpnY3R5dWZibnlsbmZiaWNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMDQxNzksImV4cCI6MjA4NDU4MDE3OX0.GF-J3m1lLCaN7ZgWUUxqTxc0vtZw8iDzdLamr2vwzzY";
-const TABLE_NAME = "aquarium_state";
-const ROW_ID = 1;
+const SUPABASE_URL = "https://etbldulfsxumtjrmhrhl.supabase.co";
+const SUPABASE_ANON_KEY ="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0YmxkdWxmc3h1bXRqcm1ocmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4Njc3NjIsImV4cCI6MjA4NDQ0Mzc2Mn0.35nN8-gzYFW2yyXWGJVF6DO0rU1HItATmnl3MVgvqRA"
+const AQUARIUM_ID = 1;
+const TABLES = {
+  devices: "aquarium_devices",
+  sensors: "aquarium_sensors",
+  settings: "aquarium_settings",
+  events: "aquarium_events"
+};
 
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /* ==== UI refs (KHỚP HTML) ==== */
@@ -107,11 +111,11 @@ function syncBrightness(value) {
   brightTextEl.textContent = `${value}%`;
 }
 
-function applyState(d) {
+function applySensors(d) {
   if (!d) {
     setStatus("warn", "Không thấy dữ liệu");
     alertEl.textContent =
-      "Không thấy bản ghi. Kiểm tra bảng Supabase và ROW_ID.";
+      "Không thấy bản ghi cảm biến. Kiểm tra bảng Supabase và AQUARIUM_ID.";
     return;
   }
 
@@ -127,14 +131,6 @@ function applyState(d) {
 
   pumpEl.textContent = d.water_status ?? "--";
   lastPumpEl.textContent = "--";
-  if (d.feed_time) {
-    feedTimeEl.value = d.feed_time;
-    updateStoredState({ feed_time: d.feed_time });
-  }
-  if (d.water_time) {
-    waterTimeEl.value = d.water_time;
-    updateStoredState({ water_time: d.water_time });
-  }
   lastFeedEl.textContent = d.feed_last_at
     ? new Date(d.feed_last_at).toLocaleString()
     : "--";
@@ -145,20 +141,59 @@ function applyState(d) {
   updatedAtEl.textContent = new Date().toLocaleString();
 }
 
-async function fetchState() {
+function applySettings(d) {
+  if (!d) return;
+
+  if (d.feed_time) {
+    feedTimeEl.value = d.feed_time;
+    updateStoredState({ feed_time: d.feed_time });
+  }
+  if (d.water_time) {
+    waterTimeEl.value = d.water_time;
+    updateStoredState({ water_time: d.water_time });
+  }
+  if (d.led_brightness !== null && d.led_brightness !== undefined) {
+    brightnessEl.value = d.led_brightness;
+    syncBrightness(d.led_brightness);
+    updateStoredState({ led_brightness: d.led_brightness });
+  }
+  if (d.led_color) {
+    colorEl.value = d.led_color;
+    setColorUi(d.led_color);
+    updateStoredState({ led_color: d.led_color });
+  }
+}
+
+async function fetchSensors() {
   const { data, error } = await supabaseClient
-    .from(TABLE_NAME)
+    .from(TABLES.sensors)
     .select("*")
-    .eq("id", ROW_ID)
+    .eq("aquarium_id", AQUARIUM_ID)
     .single();
 
   if (error) {
     setStatus("error", "Không kết nối");
-    alertEl.textContent = `Lỗi Supabase: ${error.message}`;
+    alertEl.textContent = `Lỗi Supabase (sensors): ${error.message}`;
     return;
   }
 
-  applyState(data);
+  applySensors(data);
+}
+
+async function fetchSettings() {
+  const { data, error } = await supabaseClient
+    .from(TABLES.settings)
+    .select("*")
+    .eq("aquarium_id", AQUARIUM_ID)
+    .single();
+
+  if (error) {
+    setStatus("error", "Không kết nối");
+    alertEl.textContent = `Lỗi Supabase (settings): ${error.message}`;
+    return;
+  }
+
+  applySettings(data);
 }
 
 function subscribeToUpdates() {
@@ -166,9 +201,26 @@ function subscribeToUpdates() {
     .channel("aquarium-updates")
     .on(
       "postgres_changes",
-      { event: "*", schema: "public", table: TABLE_NAME, filter: `id=eq.${ROW_ID}` },
+      {
+        event: "*",
+        schema: "public",
+        table: TABLES.sensors,
+        filter: `aquarium_id=eq.${AQUARIUM_ID}`
+      },
       (payload) => {
-        applyState(payload.new);
+        applySensors(payload.new);
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: TABLES.settings,
+        filter: `aquarium_id=eq.${AQUARIUM_ID}`
+      },
+      (payload) => {
+        applySettings(payload.new);
       }
     )
     .subscribe((status) => {
@@ -243,12 +295,12 @@ saveLedBtn.addEventListener("click", async () => {
 
   try {
     const { error } = await supabaseClient
-      .from(TABLE_NAME)
+      .from(TABLES.settings)
       .update({
         led_brightness: Number(brightnessEl.value),
         led_color: colorEl.value
       })
-      .eq("id", ROW_ID);
+      .eq("aquarium_id", AQUARIUM_ID);
     if (error) throw error;
     updateStoredState({
       led_brightness: Number(brightnessEl.value),
@@ -270,11 +322,11 @@ saveFeedBtn.addEventListener("click", async () => {
 
   try {
     const { error } = await supabaseClient
-      .from(TABLE_NAME)
+      .from(TABLES.settings)
       .update({
         feed_time: feedTimeEl.value
       })
-      .eq("id", ROW_ID);
+      .eq("aquarium_id", AQUARIUM_ID);
     if (error) throw error;
     updateStoredState({ feed_time: feedTimeEl.value });
     showToast("Đã lưu lịch cho ăn!");
@@ -293,11 +345,11 @@ saveWaterBtn.addEventListener("click", async () => {
 
   try {
     const { error } = await supabaseClient
-      .from(TABLE_NAME)
+      .from(TABLES.settings)
       .update({
         water_time: waterTimeEl.value
       })
-      .eq("id", ROW_ID);
+      .eq("aquarium_id", AQUARIUM_ID);
     if (error) throw error;
     updateStoredState({ water_time: waterTimeEl.value });
     showToast("Đã lưu lịch thay nước!");
@@ -310,5 +362,6 @@ saveWaterBtn.addEventListener("click", async () => {
   }
 });
 
-fetchState();
+fetchSensors();
+fetchSettings();
 subscribeToUpdates();
